@@ -179,10 +179,3 @@ pip install -r requirements.txt
 python main.py
 # Open http://localhost:8000
 ```
-
-## Deploy to Render
-
-1. Push to GitHub
-2. New Web Service → Root: `firereach/backend`
-3. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-4. Add all 5 env variables in Render dashboard
