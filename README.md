@@ -49,10 +49,3 @@ python main.py
 | GMAIL_USER | your Gmail | — |
 | GMAIL_APP_PASSWORD | myaccount.google.com → Security → App Passwords | — |
 | HUNTER_API_KEY | hunter.io/api-keys | 25 searches/mo |
-
-## Deploy to Render
-1. Push to GitHub
-2. Render → New Web Service
-3. Root directory: `firereach/backend`
-4. Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-5. Add all 5 environment variables
