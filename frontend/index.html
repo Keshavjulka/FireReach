@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FireReach — Autonomous Outreach Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0b;--surface:#111114;--surface2:#18181d;--border:#2a2a32;--accent:#ff4d1c;--text:#f0efe8;--muted:#6b6b78;--green:#22c55e;--blue:#3b82f6;--yellow:#facc15;--red:#ef4444;--purple:#a855f7;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,77,28,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,77,28,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.wrap{max-width:980px;margin:0 auto;padding:40px 24px;position:relative;z-index:1;}
+
+/* header */
+header{display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap;}
+.logo-mark{width:44px;height:44px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;box-shadow:0 0 24px rgba(255,77,28,.4);flex-shrink:0;}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;}
+.logo-text span{color:var(--accent);}
+.tagline{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.nav{margin-left:auto;display:flex;gap:8px;}
+.tab-btn{padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:all .2s;}
+.tab-btn.active,.tab-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(255,77,28,.08);}
+
+/* pages */
+.page{display:none;}.page.active{display:block;}
+
+/* pipeline */
+.pipeline{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px;margin-bottom:24px;overflow-x:auto;gap:0;scrollbar-width:none;}
+.pipeline::-webkit-scrollbar{display:none;}
+.step{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.step-icon{width:32px;height:32px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .3s;}
+.step-label{font-size:10px;color:var(--muted);}
+.step-name{font-size:11px;font-weight:500;color:var(--text);}
+.step-arrow{width:22px;height:2px;background:var(--border);margin:0 6px;flex-shrink:0;position:relative;}
+.step-arrow::after{content:'';position:absolute;right:-4px;top:-3px;border:4px solid transparent;border-left-color:var(--border);}
+.step.active .step-icon{background:rgba(255,77,28,.15);border-color:var(--accent);animation:sp 1s infinite;}
+.step.done .step-icon{background:rgba(34,197,94,.15);border-color:var(--green);}
+.step.pending .step-icon{background:rgba(250,204,21,.1);border-color:var(--yellow);}
+@keyframes sp{0%,100%{box-shadow:0 0 12px rgba(255,77,28,.3)}50%{box-shadow:0 0 20px rgba(255,77,28,.6)}}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:22px;}
+.card h2{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:6px;}
+.card p{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+
+/* form */
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
+label{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+textarea,input[type=text]{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 15px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color .2s;width:100%;}
+textarea{resize:vertical;min-height:90px;line-height:1.6;}
+textarea:focus,input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,77,28,.1);}
+
+/* buttons */
+.btn{padding:12px 20px;border:none;border-radius:9px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-full{width:100%;justify-content:center;}
+.btn-accent{background:var(--accent);color:#fff;}
+.btn-accent:hover{background:#e63d0f;transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,77,28,.3);}
+.btn-accent:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#16a34a;transform:translateY(-1px);}
+.btn-green:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--red);color:var(--red);}
+.btn-purple{background:rgba(168,85,247,.15);color:var(--purple);border:1px solid rgba(168,85,247,.35);}
+.btn-purple:hover{background:rgba(168,85,247,.25);}
+
+/* memory banner */
+.mem-banner{background:rgba(168,85,247,.07);border:2px solid rgba(168,85,247,.35);border-radius:14px;padding:22px;margin-bottom:22px;display:none;animation:fi .4s ease;}
+.mem-banner.show{display:block;}
+.mem-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.mem-icon{font-size:24px;flex-shrink:0;}
+.mem-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--purple);}
+.mem-sub{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;}
+.mem-pct{margin-left:auto;background:rgba(168,85,247,.2);border:1px solid rgba(168,85,247,.4);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--purple);white-space:nowrap;flex-shrink:0;}
+.mem-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.mem-chip{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;}
+.mem-chip-name{font-size:12px;color:var(--text);font-weight:500;}
+.mem-chip-detail{font-size:11px;color:var(--muted);margin-top:2px;}
+.mem-actions{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* log */
+.log-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:22px;display:none;}
+.log-card.show{display:block;}
+.log-hdr{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+.log-body{padding:16px;max-height:200px;overflow-y:auto;font-size:12px;line-height:1.8;}
+.log-line{display:flex;gap:10px;margin-bottom:2px;animation:fi .3s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.lt{color:var(--muted);flex-shrink:0;}
+.ltag{padding:0 6px;border-radius:4px;font-size:10px;font-weight:500;flex-shrink:0;}
+.ti{background:rgba(59,130,246,.2);color:var(--blue);}
+.tt{background:rgba(255,77,28,.2);color:var(--accent);}
+.td{background:rgba(34,197,94,.2);color:var(--green);}
+.ts{background:rgba(250,204,21,.2);color:var(--yellow);}
+.tm{background:rgba(168,85,247,.2);color:var(--purple);}
+.lm{color:var(--text);}
+
+/* company cards */
+.cc-section{display:none;margin-bottom:22px;}.cc-section.show{display:block;}
+.sec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
+.cc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:15px;transition:all .2s;}
+.cc.approved{border-color:var(--green);}.cc.skipped{opacity:.4;}.cc.current{border-color:var(--yellow);box-shadow:0 0 14px rgba(250,204,21,.12);}
+.cc-head{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+.cc-av{width:30px;height:30px;background:rgba(255,77,28,.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:var(--accent);flex-shrink:0;}
+.cc-name{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;}
+.cc-domain{font-size:11px;color:var(--muted);}
+.cc-reason{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px;}
+.cc-badges{display:flex;gap:5px;flex-wrap:wrap;}
+.badge{padding:2px 7px;border-radius:4px;font-size:10px;}
+.be{background:rgba(59,130,246,.15);color:var(--blue);}
+.bdm{background:rgba(255,77,28,.15);color:var(--accent);}
+.bsent{background:rgba(34,197,94,.15);color:var(--green);}
+.bskip{background:rgba(107,107,120,.15);color:var(--muted);}
+.bres{background:rgba(59,130,246,.1);color:var(--blue);}
+
+/* approval */
+.ap-panel{background:var(--surface);border:2px solid var(--yellow);border-radius:14px;padding:22px;margin-bottom:22px;display:none;}
+.ap-panel.show{display:block;animation:fi .4s ease;}
+.ap-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:12px;}
+.ap-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;}
+.ap-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.ap-ctr{background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.3);border-radius:7px;padding:6px 12px;font-size:11px;color:var(--yellow);white-space:nowrap;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.brief-box,.sig-box{background:var(--surface2);border-radius:0 7px 7px 0;padding:12px;font-size:12px;line-height:1.8;color:var(--text);max-height:150px;overflow-y:auto;}
+.brief-box{border-left:3px solid var(--accent);}
+.sig-box{border-left:3px solid var(--blue);}
+.prev-box{background:var(--surface2);border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px;}
+.prev-hdr{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);}
+.prev-subj{font-size:13px;color:var(--text);font-weight:500;margin-top:3px;}
+.prev-body{padding:14px;font-size:12px;line-height:1.8;color:var(--text);white-space:pre-wrap;max-height:180px;overflow-y:auto;}
+.rec-list{margin-bottom:14px;}
+.no-rec{color:var(--muted);font-size:12px;padding:10px;background:var(--surface2);border-radius:7px;margin-bottom:14px;}
+.rec-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;margin-bottom:7px;font-size:12px;}
+.rav{width:26px;height:26px;background:rgba(255,77,28,.2);border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:var(--accent);flex-shrink:0;}
+.ri{flex:1;}.re{color:var(--text);}.rr{color:var(--muted);font-size:11px;}
+.ap-actions{display:flex;gap:10px;}
+
+/* stats */
+.stats-sec{display:none;margin-bottom:22px;}.stats-sec.show{display:block;}
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;}
+.stat{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:13px 18px;flex:1;min-width:90px;}
+.stat-n{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+.stat-l{font-size:11px;color:var(--muted);margin-top:2px;}
+.stat.g .stat-n{color:var(--green);}.stat.o .stat-n{color:var(--accent);}.stat.b .stat-n{color:var(--blue);}.stat.p .stat-n{color:var(--purple);}
+
+/* history */
+.h-filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.f-btn{padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:all .2s;}
+.f-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,77,28,.08);}
+.h-table{width:100%;border-collapse:collapse;font-size:12px;}
+.h-table th{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;}
+.h-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.h-table tr:last-child td{border-bottom:none;}
+.h-table tr:hover td{background:rgba(255,255,255,.02);}
+.st-s{background:rgba(34,197,94,.15);color:var(--green);padding:2px 7px;border-radius:4px;font-size:10px;}
+.st-f{background:rgba(239,68,68,.15);color:var(--red);padding:2px 7px;border-radius:4px;font-size:10px;}
+.emp{text-align:center;padding:48px;color:var(--muted);font-size:13px;}
+.camp-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:15px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:default;transition:border-color .2s;}
+.camp-row:hover{border-color:var(--muted);}
+.camp-icp{font-size:12px;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px;}
+.camp-meta{font-size:11px;color:var(--muted);}
+.camp-chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;}
+
+@media(max-width:640px){.two-col{grid-template-columns:1fr}.ap-actions{flex-direction:column}.cc-grid{grid-template-columns:1fr}.nav{gap:4px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo-mark">F</div>
+    <div>
+      <div class="logo-text">Fire<span>Reach</span></div>
+      <div class="tagline">Autonomous Outreach Engine v5</div>
+    </div>
+    <div class="nav">
+      <button class="tab-btn active" onclick="goPage('campaign',this)">⚡ Campaign</button>
+      <button class="tab-btn" onclick="goPage('history',this)">📋 History</button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════ CAMPAIGN PAGE ══════════════════════ -->
+  <div class="page active" id="page-campaign">
+
+    <!-- Pipeline -->
+    <div class="pipeline">
+      <div class="step" id="s1"><div class="step-icon">🎯</div><div><div class="step-name">ICP Matcher</div><div class="step-label">Companies</div></div></div>
+      <div class="step-arrow"></div>
+      <div class="step" id="s2"><div class="step-icon">📧</div><div><div class="step-name">Email Finder</div><div class="step-label">Hunter.io</div></div></div>
+      <div class="step-arrow"></div>
+      <div class="step" id="s3"><div class="step-icon">🔍</div><div><div class="step-name">Signals</div><div class="step-label">Serper</div></div></div>
+      <div class="step-arrow"></div>
+      <div class="step" id="s4"><div class="step-icon">🧠</div><div><div class="step-name">Research</div><div class="step-label">Groq AI</div></div></div>
+      <div class="step-arrow"></div>
+      <div class="step" id="s5"><div class="step-icon">🚀</div><div><div class="step-name">Send</div><div class="step-label" id="s5lbl">Approve first</div></div></div>
+    </div>
+
+    <!-- ICP Form -->
+    <div class="card">
+      <h2>Describe your Ideal Customer</h2>
+      <p>FireReach finds matching companies, discovers decision maker emails, researches live signals, and prepares personalized outreach — all awaiting your approval before any email is sent.</p>
+      <div class="field">
+        <label>Your ICP (Ideal Customer Profile)</label>
+        <textarea id="icp" placeholder="e.g. We sell high-end cybersecurity training to Series B startups rapidly hiring engineers..."></textarea>
+      </div>
+      <button class="btn btn-accent btn-full" id="runBtn" onclick="checkMemory()">⚡ Find Companies & Research</button>
+    </div>
+
+    <!-- Memory Banner -->
+    <div class="mem-banner" id="memBanner">
+      <div class="mem-top">
+        <div class="mem-icon">🧠</div>
+        <div>
+          <div class="mem-title">Similar Campaign Found in Memory</div>
+          <div class="mem-sub">A previous campaign closely matches your ICP. Resend those emails instantly, or run a fresh search.</div>
+        </div>
+        <div class="mem-pct" id="memPct"></div>
+      </div>
+      <div class="mem-chips" id="memChips"></div>
+      <div class="mem-actions">
+        <button class="btn btn-purple" onclick="doResend()">🔄 Resend to Same People</button>
+        <button class="btn btn-accent" onclick="doNewSearch()">🔍 New Search</button>
+        <button class="btn btn-ghost" onclick="dismissMem()">✗ Dismiss</button>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-card" id="logCard">
+      <div class="log-hdr">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <span style="margin-left:8px">firereach — live agent log</span>
+      </div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+
+    <!-- Company cards -->
+    <div class="cc-section" id="ccSection">
+      <div class="sec-title">🎯 Companies Found for Your ICP</div>
+      <div class="cc-grid" id="ccGrid"></div>
+    </div>
+
+    <!-- Approval panel -->
+    <div class="ap-panel" id="apPanel">
+      <div class="ap-top">
+        <div>
+          <div class="ap-title" id="apTitle">Review Before Sending</div>
+          <div class="ap-sub">Approve to send · Skip to move on</div>
+        </div>
+        <div class="ap-ctr" id="apCtr"></div>
+      </div>
+      <div class="two-col">
+        <div><div class="sec-title">🧠 Account Brief</div><div class="brief-box" id="apBrief"></div></div>
+        <div><div class="sec-title">📡 Key Signals</div><div class="sig-box" id="apSigs"></div></div>
+      </div>
+      <div class="sec-title">✉️ Email Preview</div>
+      <div class="prev-box">
+        <div class="prev-hdr">Subject: <span class="prev-subj" id="apSubj"></span></div>
+        <div class="prev-body" id="apBody"></div>
+      </div>
+      <div class="sec-title">👥 Will be sent to</div>
+      <div id="apRecs"></div>
+      <div class="ap-actions">
+        <button class="btn btn-green" id="approveBtn" onclick="approve()">✅ Approve & Send</button>
+        <button class="btn btn-ghost" onclick="skip()">✗ Skip</button>
+      </div>
+    </div>
+
+    <!-- Campaign stats -->
+    <div class="stats-sec" id="statsSec">
+      <div class="sec-title">📊 Campaign Summary</div>
+      <div class="stats-row" id="statsRow"></div>
+    </div>
+
+  </div><!-- /campaign -->
+
+  <!-- ══════════════════════ HISTORY PAGE ══════════════════════ -->
+  <div class="page" id="page-history">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+      <div class="sec-title" style="margin:0">📋 Outreach History</div>
+      <button class="btn btn-ghost" style="padding:8px 14px;font-size:12px" onclick="loadHistory()">↻ Refresh</button>
+    </div>
+
+    <div class="h-filters">
+      <button class="f-btn active" onclick="switchTab('emails',this)">📧 Sent Emails</button>
+      <button class="f-btn" onclick="switchTab('campaigns',this)">🗂️ Campaigns</button>
+      <button class="f-btn" onclick="switchTab('searches',this)">🔍 ICP Searches</button>
+    </div>
+
+    <!-- Emails table -->
+    <div id="hEmails">
+      <div class="emp" id="emptyEmails" style="display:none">No emails sent yet. Run your first campaign!</div>
+      <div style="overflow-x:auto;">
+        <table class="h-table" id="emailsTbl">
+          <thead><tr><th>Company</th><th>Recipient</th><th>Role</th><th>Subject</th><th>Status</th><th>Sent At</th></tr></thead>
+          <tbody id="emailsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Campaigns list -->
+    <div id="hCampaigns" style="display:none">
+      <div class="emp" id="emptyCampaigns" style="display:none">No campaigns yet. Run your first!</div>
+      <div id="campaignsList"></div>
+    </div>
+
+    <!-- ICP Searches list -->
+    <div id="hSearches" style="display:none">
+      <div class="emp" id="emptySearches" style="display:none">No ICP searches yet.</div>
+      <div id="searchesList"></div>
+    </div>
+
+  </div><!-- /history -->
+
+</div><!-- /wrap -->
+
+<script>
+const API = window.location.origin;
+
+// ── State ──
+let queue        = [];   // approval queue
+let qIdx         = 0;
+let curApproval  = null;
+let campaignId   = "";
+let matchedCamp  = null;
+let htab         = "emails";
+let stats = {cos:0,emails:0,dm:0,sent:0,failed:0,skipped:0};
+
+const stepMap = {
+  tool_icp_company_finder:"s1",
+  tool_email_finder:"s2",
+  tool_signal_harvester:"s3",
+  tool_research_analyst:"s4",
+  tool_outreach_automated_sender:"s5"
+};
+
+// ── Utilities ──
+function now(){ return new Date().toLocaleTimeString('en-US',{hour12:false}); }
+function san(s){ return (s||'').replace(/[^a-z0-9]/gi,'_'); }
+
+function log(msg,type='info'){
+  const b=document.getElementById('logBody');
+  const cls={info:'ti',tool:'tt',done:'td',send:'ts',mem:'tm'}[type]||'ti';
+  const lbl={info:'INFO',tool:'TOOL',done:'DONE',send:'SEND',mem:'MEM'}[type]||'INFO';
+  b.innerHTML+=`<div class="log-line"><span class="lt">${now()}</span><span class="ltag ${cls}">${lbl}</span><span class="lm">${msg}</span></div>`;
+  b.scrollTop=b.scrollHeight;
+}
+
+function setStep(tool,state){
+  const id=stepMap[tool]; if(!id) return;
+  const el=document.getElementById(id);
+  el.classList.remove('active','done','pending');
+  if(state) el.classList.add(state);
+}
+
+function resetAll(){
+  document.getElementById('logCard').classList.add('show');
+  document.getElementById('logBody').innerHTML='';
+  document.getElementById('ccSection').classList.remove('show');
+  document.getElementById('apPanel').classList.remove('show');
+  document.getElementById('statsSec').classList.remove('show');
+  document.getElementById('ccGrid').innerHTML='';
+  document.getElementById('memBanner').classList.remove('show');
+  queue=[]; qIdx=0; curApproval=null; campaignId='';
+  stats={cos:0,emails:0,dm:0,sent:0,failed:0,skipped:0};
+  ['s1','s2','s3','s4','s5'].forEach(id=>document.getElementById(id).classList.remove('active','done','pending'));
+  document.getElementById('s5lbl').textContent='Approve first';
+}
+
+// ── Page navigation ──
+function goPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='history') loadHistory();
+}
+
+// ── Memory check ──
+async function checkMemory(){
+  const icp=document.getElementById('icp').value.trim();
+  if(!icp){ alert('Please describe your ICP.'); return; }
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true; btn.textContent='🧠 Checking memory...';
+  try{
+    const r=await fetch(`${API}/api/check-memory`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({icp})
+    });
+    const d=await r.json();
+    if(d.match){
+      matchedCamp=d.campaign;
+      showMemBanner(d.campaign,d.similarity);
+      btn.disabled=false; btn.textContent='⚡ Find Companies & Research';
+      return;
+    }
+  }catch(e){ console.warn('Memory check err:',e); }
+  btn.disabled=false; btn.textContent='⚡ Find Companies & Research';
+  runAgent();
+}
+
+function showMemBanner(camp,sim){
+  document.getElementById('memPct').textContent=`${sim}% match`;
+  const cos=camp.companies||[];
+  document.getElementById('memChips').innerHTML=cos.map(c=>`
+    <div class="mem-chip">
+      <div class="mem-chip-name">${c.company_name||c.name||'?'}</div>
+      <div class="mem-chip-detail">${(c.recipients||[]).length} decision makers · ${c.domain||''}</div>
+    </div>`).join('');
+  document.getElementById('memBanner').classList.add('show');
+}
+
+function dismissMem(){ document.getElementById('memBanner').classList.remove('show'); matchedCamp=null; }
+
+function doNewSearch(){ document.getElementById('memBanner').classList.remove('show'); matchedCamp=null; runAgent(); }
+
+async function doResend(){
+  if(!matchedCamp) return;
+  const icp=document.getElementById('icp').value.trim();
+  resetAll();
+  log('🔄 Resending to previous recipients from memory...','mem');
+  document.getElementById('memBanner').classList.remove('show');
+  setStep('tool_outreach_automated_sender','active');
+  document.getElementById('s5lbl').textContent='Resending...';
+  try{
+    const r=await fetch(`${API}/api/resend`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({campaign_id:matchedCamp._id,icp})
+    });
+    const d=await r.json();
+    setStep('tool_outreach_automated_sender','done');
+    document.getElementById('s5lbl').textContent='Resent ✓';
+    let ts=0,tf=0;
+    for(const res of d.results||[]){
+      ts+=res.total_sent||0; tf+=res.total_failed||0;
+      log(`✓ ${res.total_sent} resent to ${res.company}`,'send');
+    }
+    stats.sent=ts; stats.failed=tf;
+    log(`Resend complete — ${ts} sent, ${tf} failed`,'done');
+    showStats();
+  }catch(e){ log(`Resend error: ${e.message}`,'info'); }
+  matchedCamp=null;
+}
+
+// ── Run agent ──
+async function runAgent(){
+  const icp=document.getElementById('icp').value.trim();
+  if(!icp){ alert('Please describe your ICP.'); return; }
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true; btn.textContent='⏳ Researching...';
+  resetAll();
+  log('Analyzing ICP — finding matching companies...','info');
+
+  try{
+    const res=await fetch(`${API}/api/run`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({icp})
+    });
+    const reader=res.body.getReader();
+    const dec=new TextDecoder();
+    let buf='';
+    while(true){
+      const{done,value}=await reader.read();
+      if(done) break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');
+      buf=lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data: ')) continue;
+        try{ handle(JSON.parse(line.slice(6))); }catch(e){}
+      }
+    }
+    if(buf.startsWith('data: ')){try{handle(JSON.parse(buf.slice(6)));}catch(e){}}
+  }catch(e){ log(`Connection error: ${e.message}`,'info'); }
+
+  btn.disabled=false; btn.textContent='⚡ Find Companies & Research';
+}
+
+function handle(d){
+  if(d.event==='start') log(d.message,'info');
+
+  else if(d.event==='tool_start'){
+    setStep(d.tool,'active');
+    const lbls={
+      tool_icp_company_finder:'🎯 Finding companies matching your ICP...',
+      tool_email_finder:`📧 Finding emails for ${d.args?.company_name||'company'}...`,
+      tool_signal_harvester:`🔍 Harvesting signals for ${d.args?.company_name||'company'}...`,
+      tool_research_analyst:`🧠 Generating brief for ${d.args?.company_name||'company'}...`
+    };
+    log(lbls[d.tool]||`Calling ${d.tool}...`,'tool');
+  }
+
+  else if(d.event==='tool_done'){
+    setStep(d.tool,'done');
+    const r=d.result;
+    if(d.tool==='tool_icp_company_finder'){
+      const n=r.companies?.length||0; stats.cos=n;
+      log(`Found ${n} companies matching your ICP`,'done');
+      renderCards(r.companies||[]);
+    }
+    else if(d.tool==='tool_email_finder'){
+      const dm=r.dm_count||0;
+      stats.emails+=(r.total_found||0); stats.dm+=dm;
+      log(`${r.company}: ${r.total_found||0} emails · ${dm} decision makers`,'done');
+      updBadges(r.company,{e:r.total_found||0,dm});
+    }
+    else if(d.tool==='tool_signal_harvester') log(`${r.company}: signals captured`,'done');
+    else if(d.tool==='tool_research_analyst')  log(`${r.company}: brief ready`,'done');
+  }
+
+  else if(d.event==='research_complete'){
+    log(d.message,'send');
+    setStep('tool_outreach_automated_sender','pending');
+    document.getElementById('s5lbl').textContent='Needs approval';
+  }
+
+  else if(d.event==='awaiting_approval'){
+    queue.push(d);
+    log(`${d.company_name}: ready for your review`,'send');
+    if(queue.length===1) showApproval(0);
+  }
+
+  else if(d.event==='all_done'){
+    if(d.campaign_id) campaignId=d.campaign_id;
+    log('All companies queued.','info');
+    if(queue.length===0) showStats();
+  }
+
+  else if(d.event==='error') log(`⚠️ ${d.message}`,'info');
+}
+
+// ── Company cards ──
+function renderCards(cos){
+  document.getElementById('ccGrid').innerHTML=cos.map(c=>`
+    <div class="cc" id="cc-${san(c.name)}">
+      <div class="cc-head">
+        <div class="cc-av">${(c.name||'?')[0].toUpperCase()}</div>
+        <div><div class="cc-name">${c.name}</div><div class="cc-domain">${c.domain}</div></div>
+      </div>
+      <div class="cc-reason">${c.reason||''}</div>
+      <div class="cc-badges" id="bd-${san(c.name)}">
+        <span class="badge bres">Researching...</span>
+      </div>
+    </div>`).join('');
+  document.getElementById('ccSection').classList.add('show');
+}
+
+function updBadges(name,info){
+  const el=document.getElementById(`bd-${san(name)}`);
+  if(el) el.innerHTML=`<span class="badge be">${info.e} emails</span><span class="badge bdm">${info.dm} DMs</span>`;
+}
+
+function markCard(name,status){
+  const c=document.getElementById(`cc-${san(name)}`);
+  if(c){ c.classList.remove('current'); c.classList.add(status==='approved'?'approved':'skipped'); }
+  const b=document.getElementById(`bd-${san(name)}`);
+  if(b) b.innerHTML+=(status==='approved')?`<span class="badge bsent">✓ Sent</span>`:`<span class="badge bskip">Skipped</span>`;
+}
+
+function hlCard(name){
+  document.querySelectorAll('.cc').forEach(c=>c.classList.remove('current'));
+  const c=document.getElementById(`cc-${san(name)}`);
+  if(c) c.classList.add('current');
+}
+
+// ── Approval panel ──
+function showApproval(idx){
+  if(idx>=queue.length){ document.getElementById('apPanel').classList.remove('show'); showStats(); return; }
+  qIdx=idx; curApproval=queue[idx];
+  const c=curApproval;
+  hlCard(c.company_name);
+  document.getElementById('apTitle').textContent=`Review: ${c.company_name}`;
+  document.getElementById('apCtr').textContent=`Company ${idx+1} of ${queue.length}`;
+  document.getElementById('apBrief').textContent=c.account_brief||'No brief generated.';
+
+  // Signals
+  const sigs=c.signals?.signals||{};
+  let sh='';
+  for(const[t,items] of Object.entries(sigs)){
+    const f=Array.isArray(items)?items[0]:null;
+    if(f?.title) sh+=`<div style="margin-bottom:8px"><span style="color:var(--accent);font-size:10px;text-transform:uppercase;letter-spacing:1px">${t}</span><br>${f.title.substring(0,100)}...</div>`;
+  }
+  document.getElementById('apSigs').innerHTML=sh||'<span style="color:var(--muted)">No signals captured.</span>';
+
+  document.getElementById('apSubj').textContent=c.preview?.subject||'';
+  document.getElementById('apBody').textContent=c.preview?.body||'';
+
+  const recs=c.recipients||[];
+  document.getElementById('approveBtn').disabled=(recs.length===0);
+  document.getElementById('apRecs').innerHTML=recs.length===0
+    ?`<div class="no-rec">⚠️ No decision makers found for ${c.company_name}.</div>`
+    :`<div class="rec-list">${recs.map(r=>`
+        <div class="rec-row">
+          <div class="rav">${(r.first_name||'?')[0].toUpperCase()}</div>
+          <div class="ri">
+            <div class="re">${r.email}</div>
+            <div class="rr">${[r.first_name,r.last_name].filter(Boolean).join(' ')||'—'} · ${r.position||'Unknown'} · ${r.confidence||0}% confidence</div>
+          </div>
+          <span class="badge bdm">DM</span>
+        </div>`).join('')}</div>`;
+
+  document.getElementById('apPanel').classList.add('show');
+  setTimeout(()=>document.getElementById('apPanel').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+async function approve(){
+  if(!curApproval) return;
+  const c=curApproval;
+  const btn=document.getElementById('approveBtn');
+  btn.disabled=true; btn.textContent='⏳ Sending...';
+  setStep('tool_outreach_automated_sender','active');
+  log(`Sending emails for ${c.company_name}...`,'send');
+
+  try{
+    const r=await fetch(`${API}/api/confirm`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        company_name:c.company_name,account_brief:c.account_brief,
+        signals:c.signals,icp:c.icp,recipient_emails:c.recipients,
+        campaign_id:campaignId
+      })
+    });
+    const res=await r.json();
+    stats.sent+=(res.total_sent||0); stats.failed+=(res.total_failed||0);
+    log(`✓ ${res.total_sent} email(s) sent to ${c.company_name}`,'send');
+    markCard(c.company_name,'approved');
+    setStep('tool_outreach_automated_sender','done');
+  }catch(e){ log(`Error: ${e.message}`,'info'); }
+
+  btn.textContent='✅ Approve & Send';
+  showApproval(qIdx+1);
+}
+
+function skip(){
+  if(!curApproval) return;
+  stats.skipped++;
+  log(`Skipped ${curApproval.company_name}`,'info');
+  markCard(curApproval.company_name,'skipped');
+  showApproval(qIdx+1);
+}
+
+function showStats(){
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat o"><div class="stat-n">${stats.cos}</div><div class="stat-l">Companies</div></div>
+    <div class="stat b"><div class="stat-n">${stats.emails}</div><div class="stat-l">Emails Found</div></div>
+    <div class="stat o"><div class="stat-n">${stats.dm}</div><div class="stat-l">Decision Makers</div></div>
+    <div class="stat g"><div class="stat-n">${stats.sent}</div><div class="stat-l">Sent</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--muted)">${stats.skipped}</div><div class="stat-l">Skipped</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--red)">${stats.failed}</div><div class="stat-l">Failed</div></div>`;
+  document.getElementById('statsSec').classList.add('show');
+  setTimeout(()=>document.getElementById('statsSec').scrollIntoView({behavior:'smooth'}),100);
+  log('🎉 Campaign complete — saved to memory.','done');
+  setStep('tool_outreach_automated_sender','done');
+  document.getElementById('s5lbl').textContent='Complete ✓';
+}
+
+// ── History ──
+function switchTab(tab,btn){
+  htab=tab;
+  document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('hEmails').style.display=tab==='emails'?'block':'none';
+  document.getElementById('hCampaigns').style.display=tab==='campaigns'?'block':'none';
+  document.getElementById('hSearches').style.display=tab==='searches'?'block':'none';
+  loadHistory();
+}
+
+async function loadHistory(){
+  if(htab==='emails'){
+    try{
+      const r=await fetch(`${API}/api/history/emails`);
+      const emails=await r.json();
+      const tbody=document.getElementById('emailsTbody');
+      if(!emails.length){
+        document.getElementById('emptyEmails').style.display='block';
+        document.getElementById('emailsTbl').style.display='none';
+        return;
+      }
+      document.getElementById('emptyEmails').style.display='none';
+      document.getElementById('emailsTbl').style.display='';
+      tbody.innerHTML=emails.map(e=>`
+        <tr>
+          <td><b>${e.company_name||'—'}</b></td>
+          <td>${e.recipient?.email||'—'}</td>
+          <td style="color:var(--muted)">${e.recipient?.position||'—'}</td>
+          <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.subject||'—'}</td>
+          <td>${e.status==='sent'?'<span class="st-s">✓ Sent</span>':'<span class="st-f">✗ Failed</span>'}</td>
+          <td style="color:var(--muted);white-space:nowrap">${e.sent_at?new Date(e.sent_at).toLocaleString():'—'}</td>
+        </tr>`).join('');
+    }catch(e){ console.error(e); }
+
+  } else if(htab==='campaigns'){
+    try{
+      const r=await fetch(`${API}/api/history/campaigns`);
+      const camps=await r.json();
+      const list=document.getElementById('campaignsList');
+      if(!camps.length){
+        document.getElementById('emptyCampaigns').style.display='block';
+        list.innerHTML=''; return;
+      }
+      document.getElementById('emptyCampaigns').style.display='none';
+      list.innerHTML=camps.map(c=>`
+        <div class="camp-row">
+          <div style="font-size:22px">🗂️</div>
+          <div style="flex:1;min-width:0">
+            <div class="camp-icp">"${c.icp||'—'}"</div>
+            <div class="camp-meta">${c.total||0} companies · ${c.created_at?new Date(c.created_at).toLocaleString():'—'}</div>
+          </div>
+          <div class="camp-chips">
+            ${(c.companies||[]).map(co=>`<span class="badge be">${co.company_name||co.name||'?'}</span>`).join('')}
+          </div>
+        </div>`).join('');
+    }catch(e){ console.error(e); }
+
+  } else if(htab==='searches'){
+    try{
+      const r=await fetch(`${API}/api/history/searches`);
+      const searches=await r.json();
+      const list=document.getElementById('searchesList');
+      if(!searches.length){
+        document.getElementById('emptySearches').style.display='block';
+        list.innerHTML=''; return;
+      }
+      document.getElementById('emptySearches').style.display='none';
+      const actionIcon={'new_search':'🔍','memory_match':'🧠','resend':'🔄'};
+      const actionLabel={'new_search':'New Search','memory_match':'Memory Match','resend':'Resend'};
+      const actionColor={'new_search':'var(--accent)','memory_match':'var(--purple)','resend':'var(--green)'};
+      list.innerHTML=searches.map(s=>`
+        <div class="camp-row">
+          <div style="font-size:20px">${actionIcon[s.action]||'🔍'}</div>
+          <div style="flex:1;min-width:0">
+            <div class="camp-icp">"${s.icp||'—'}"</div>
+            <div class="camp-meta">${s.total_companies||0} companies · ${s.searched_at?new Date(s.searched_at).toLocaleString():'—'}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <div class="camp-chips">
+              ${(s.companies_found||[]).map(c=>`<span class="badge be">${c.name||'?'}</span>`).join('')}
+            </div>
+            <span style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;color:${actionColor[s.action]||'var(--muted)'}">
+              ${actionLabel[s.action]||s.action}
+            </span>
+          </div>
+        </div>`).join('');
+    }catch(e){ console.error(e); }
+  }
+}
+</script>
+</body>
+</html>
