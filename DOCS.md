@@ -170,12 +170,3 @@ HUNTER_API_KEY=your_hunter_api_key
 ```
 
 ---
-
-## Run Locally
-
-```bash
-cd firereach/backend
-pip install -r requirements.txt
-python main.py
-# Open http://localhost:8000
-```
